@@ -1,0 +1,6 @@
+venv/
+.idea/
+__pycache__/
+simply_parser/__pycache__/
+assets
+.env
