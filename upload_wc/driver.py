@@ -76,7 +76,7 @@ class WooCommerceDriver:
             product_data = {
                 'name': product['name'],
                 'description': product['description'],
-                'price': product['price'],
+                'regular_price': product['price'],
                 'on_sale': product['is_available'],
                 'stock_quantity': product['in_stock'],
                 'categories': [
