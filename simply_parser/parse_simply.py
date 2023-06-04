@@ -4,10 +4,11 @@ import concurrent.futures
 import math
 from tqdm import tqdm
 from bs4 import BeautifulSoup
+from pathlib import WindowsPath
 
 from simply_parser.utils import get_session
-from config import load_simply_config, SIMPLY_PARSER_HEADERS, SIMPLY_PARSER_BASE_URL, \
-    SIMPLY_PARSER_AUTH_URL, SIMPLY_PARSER_ITEMS_PER_PAGE
+from config import SIMPLY_PARSER_HEADERS, SIMPLY_PARSER_BASE_URL, \
+    SIMPLY_PARSER_AUTH_URL, SIMPLY_PARSER_ITEMS_PER_PAGE, SimplyConfig
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -19,9 +20,10 @@ class SimplyGreenTrade:
     Interaction with https://simplygreentrade.com/
     """
 
-    def __init__(self, path):
+    def __init__(self, path: WindowsPath, config: SimplyConfig) -> None:
+        self.all_products = None
         self.path = path
-        self.config = load_simply_config(self.path / '.env')
+        self.config = config
         self.session = get_session()
         self.__auth()
         self.catalog_urls = []
@@ -68,7 +70,7 @@ class SimplyGreenTrade:
                 cur_product_urls = [x.find('a')['href'] for x in soup.find_all('div', class_='product-element-top')]
                 for cur_product_url in cur_product_urls:
                     if cur_product_url not in self.product_urls:
-                        self.product_urls.append(cur_product_url)
+                        self.product_urls.append([cur_product_url, catalog])
 
         for catalog in tqdm(self.catalog_urls):
             logging.info(f'Start parsing {catalog}')
@@ -167,7 +169,7 @@ class SimplyGreenTrade:
                     cur_product_urls = [x['href'] for x in soup.find_all('a', class_='product-image-link')]
                     for cur_product_url in cur_product_urls:
                         if cur_product_url not in self.product_urls:
-                            self.product_urls.append(cur_product_url)
+                            self.product_urls.append([cur_product_url, catalog])
 
             elif 'product-on-sale' in catalog:
                 logging.info('Unable to find products counter')
@@ -247,11 +249,11 @@ class SimplyGreenTrade:
                     cur_product_urls = [x['href'] for x in soup.find_all('a', class_='product-image-link')]
                     for cur_product_url in cur_product_urls:
                         if cur_product_url not in self.product_urls:
-                            self.product_urls.append(cur_product_url)
+                            self.product_urls.append([cur_product_url, catalog])
             else:
                 pass
 
-    def _parse_details(self, url: str) -> dict | None:
+    def _parse_details(self, url: str, category: str) -> dict | None:
         """
 
         Parse product details
@@ -312,7 +314,8 @@ class SimplyGreenTrade:
             'in_stock': in_stock,
             'breadcrumbs': breadcrumbs,
             'description': description,
-            'features': features
+            'features': features,
+            'category': category
         }
 
     def parse_catalog(self):
@@ -323,12 +326,11 @@ class SimplyGreenTrade:
 
         all_products = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(self._parse_details, product_url) for product_url in self.product_urls]
+            futures = [executor.submit(self._parse_details, product_url[0], product_url[1].split('/')[-2]) for product_url in self.product_urls]
             for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
                 cur_product = future.result()
                 if cur_product:
                     all_products.append(cur_product)
 
         logging.info(f'Total products parsed {len(all_products)}')
-        with open(self.path / 'assets' / 'result.json', 'w+', encoding='utf-8') as file:
-            json.dump(all_products, file, indent=4, ensure_ascii=False)
+        self.all_products = all_products

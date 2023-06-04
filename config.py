@@ -43,11 +43,31 @@ class SimplyConfig:
     simply_password: str
 
 
-def load_simply_config(path: str = None) -> SimplyConfig:
+@dataclass
+class WoocommerceConfig:
+    wc_key: str
+    wc_secret: str
+    wc_site: str
+
+
+@dataclass
+class Config:
+    simply_config: SimplyConfig
+    wc_config: WoocommerceConfig
+
+
+def load_config(path: str = None) -> Config:
     env = Env()
     env.read_env(path)
 
-    return SimplyConfig(
-        simply_login=env.str('SIMPLY_LOGIN'),
-        simply_password=env.str('SIMPLY_PASSWORD')
+    return Config(
+        simply_config=SimplyConfig(
+            simply_login=env.str('SIMPLY_LOGIN'),
+            simply_password=env.str('SIMPLY_PASSWORD')
+        ),
+        wc_config=WoocommerceConfig(
+            wc_key=env.str('CONSUMER_KEY'),
+            wc_secret=env.str('CONSUMER_SECRET'),
+            wc_site=env.str('WC_SITE')
+        )
     )

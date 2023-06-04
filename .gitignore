@@ -4,3 +4,6 @@ __pycache__/
 simply_parser/__pycache__/
 assets
 .env
+build/
+dist
+run.spec
