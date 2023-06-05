@@ -64,7 +64,7 @@ class WooCommerceDriver:
                 "name": category,
                 "description": "category description"
             }
-            self.api.post('products/categories', category_data, patams={'force': True})
+            self.api.post('products/categories', category_data, params={'force': True})
 
         self.get_all_category()
 
@@ -76,7 +76,7 @@ class WooCommerceDriver:
             product_data = {
                 'name': product['name'],
                 'description': product['description'],
-                'regular_price': product['price'],
+                'regular_price': str(product['price']),
                 'on_sale': product['is_available'],
                 'stock_quantity': product['in_stock'],
                 'categories': [
