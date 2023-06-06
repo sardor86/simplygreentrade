@@ -79,6 +79,10 @@ class WooCommerceDriver:
                 'regular_price': str(product['price']),
                 'on_sale': product['is_available'],
                 'stock_quantity': product['in_stock'],
+                'meta_data': [{
+                    'key': 'maximum_allowed_quantity',
+                    'value': str(product['in_stock'])
+                }],
                 'categories': [
                     {
                         'id': self.get_category(product['category'])
